@@ -1,5 +1,5 @@
 # Versioning
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
 DEVELOPER = "nutty"
 
 
@@ -27,7 +27,7 @@ import platform
 import socket
 import hashlib
 from PIL import Image
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 from winsdk.windows.media.control import GlobalSystemMediaTransportControlsSessionManager as SMTC
 from winsdk.windows.storage.streams import DataReader
@@ -127,7 +127,7 @@ try:
 
     def load_settings():
         config = configparser.ConfigParser()
-        config['SERVER'] = {'Host': '127.0.0.1', 'Port': '5000'}
+        config['SERVER'] = {'Host': '0.0.0.0', 'Port': '5000'}
         
         # Ensure settings.ini is looked for in the executable's directory
         exe_dir = os.path.dirname(sys.executable if getattr(sys, 'frozen', False) else __file__)
@@ -155,6 +155,27 @@ try:
             return "127.0.0.1"
 
     DISPLAY_HOST = get_local_ip() if HOST == "0.0.0.0" else HOST
+
+    def get_widget_dir():
+        if getattr(sys, 'frozen', False):
+            return os.path.join(sys._MEIPASS, 'nutty-widget')
+        return os.path.join(os.path.dirname(os.path.abspath(__file__)), 'nutty-widget')
+
+    WIDGET_DIR = get_widget_dir()
+
+    def get_local_widget_url():
+        return (
+            f"http://{DISPLAY_HOST}:{PORT}/widget/index.html"
+            f"?theme=standard&font=&fontSize=20&maxWidth=500"
+            f"&verticalAlignment=align-to-center&textAlignment=left"
+            f"&useCustomColors=false&color1=%23ffffff&color2=%231d1d1d"
+            f"&showWhilePaused=false&autoHide=false&displayDuration=5"
+            f"&includedApplications=&excludedApplications="
+            f"&showAlbumArt=true&showProgressBar=true&swapArtistTrack=false"
+            f"&showPrimary=true&showSecondary=true"
+            f"&showAnimation=slide-in-from-bottom&hideAnimation=slide-out-bottom"
+            f"&smtcBridgeAddress={DISPLAY_HOST}&smtcBridgePort={PORT}"
+        )
 
     app = Flask(__name__)
     CORS(app)
@@ -440,9 +461,13 @@ try:
 
     @app.route('/artwork/<app_identifier>')
     def serve_artwork(app_identifier):
-        from flask import send_from_directory
         # Serve the cached thumbnail directly from the temp directory
         return send_from_directory(THUMB_DIR, f"{app_identifier}.jpg")
+
+    @app.route('/widget/')
+    @app.route('/widget/<path:filename>')
+    def serve_widget(filename='index.html'):
+        return send_from_directory(WIDGET_DIR, filename)
 
     @app.route('/now-playing')
     def now_playing():
@@ -498,6 +523,27 @@ try:
         icon.stop()
         os._exit(0)
 
+    def open_local_widget(icon=None, item=None):
+        webbrowser.open(get_local_widget_url())
+
+    def copy_obs_widget_url(icon=None, item=None):
+        url = get_local_widget_url()
+        try:
+            import subprocess
+            subprocess.run(
+                ["powershell", "-NoProfile", "-Command", f"Set-Clipboard -Value '{url}'"],
+                capture_output=True,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+            )
+            notification.notify(
+                title=f'SMTC Bridge v{APP_VERSION}',
+                message='OBS widget URL copied to clipboard',
+                app_icon=get_resource_path('smtc-bridge.ico'),
+                timeout=3,
+            )
+        except Exception:
+            webbrowser.open(url)
+
     # Setup the tray icon
     def setup_tray():
         # Set the icon
@@ -507,6 +553,8 @@ try:
         menu = pystray.Menu(
             pystray.MenuItem(f"SMTC Bridge v{APP_VERSION} by {DEVELOPER}", None, enabled=False),
             pystray.Menu.SEPARATOR,            
+            pystray.MenuItem("Open Local Widget", open_local_widget),
+            pystray.MenuItem("Copy OBS Widget URL", copy_obs_widget_url),
             pystray.MenuItem("View Data (JSON)", lambda: webbrowser.open(f"http://{DISPLAY_HOST}:{PORT}/now-playing")),
             pystray.MenuItem("View Active Sessions", lambda: webbrowser.open(f"http://{DISPLAY_HOST}:{PORT}/sessions")),
             pystray.Menu.SEPARATOR,

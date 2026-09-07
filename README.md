@@ -1,19 +1,37 @@
-# SMTC Bridge
+# SMTC Bridge (local widget fork)
+
+Fork of [nuttylmao/smtc-bridge](https://github.com/nuttylmao/smtc-bridge) with a **fully local Now Playing widget** baked into the app — no dependency on `widgets.nutty.gg` for OBS.
 
 SMTC Bridge is a lightweight system tray application that exposes Windows ***System Media Transport Controls (SMTC)*** as a clean REST API.
 
-This tool allows developers to easily create their own "Now Playing" widgets that work with anything supported by SMTC, bypassing the complex API limitations imposed by streaming platforms (fuck you Spotify).
-
-Simply run the application, and a local web server will run in the background. By default, it can be accessed here after running the application:<br>
-[http://127.0.0.1:5000/now-playing/](http://127.0.0.1:5000/now-playing/)
-
-A ready-to-use "Now Playing" widget utilizing SMTC Bridge is available to try here:<br>
-**[https://widgets.nutty.gg/now-playing/settings/](https://widgets.nutty.gg/now-playing/settings/)**
+This is useful when OBS runs on a different PC than the music PC: public HTTPS widgets are blocked from talking to your LAN API, so this fork serves the nutty-style overlay locally over HTTP from the same process.
 
 ## Quick Start
-1. Download the latest `.exe` from the [Releases page](https://github.com/nuttylmao/smtc-bridge/releases).
-2. Run the application — a tray icon will appear.
-3. Right-click the icon to view the API.
+1. Download / build the `.exe`, or run `launch.bat`.
+2. Run the app — a tray icon will appear.
+3. Right-click the tray icon:
+   - **Open Local Widget** — preview the overlay in your browser
+   - **Copy OBS Widget URL** — paste into OBS Browser Source on your stream PC
+4. Default API: [http://127.0.0.1:5000/now-playing](http://127.0.0.1:5000/now-playing)
+
+### OBS (two-PC setup)
+On the music PC, keep SMTC Bridge running with LAN access enabled (`settings.ini`):
+
+```ini
+[SERVER]
+host = 0.0.0.0
+port = 5000
+```
+
+Allow Windows Firewall inbound TCP **5000**.
+
+On the stream PC, Browser Source URL (example):
+
+```text
+http://MUSIC_PC_IP:5000/widget/index.html?theme=standard&fontSize=20&maxWidth=500&smtcBridgeAddress=MUSIC_PC_IP&smtcBridgePort=5000&showAlbumArt=true&showProgressBar=true&showAnimation=slide-in-from-bottom&hideAnimation=slide-out-bottom
+```
+
+Use **Copy OBS Widget URL** from the tray so the full query string is filled with your LAN IP.
 
 ### Endpoints
 
@@ -21,9 +39,10 @@ A ready-to-use "Now Playing" widget utilizing SMTC Bridge is available to try he
 | :--- | :--- | :--- |
 | `GET` | `/now-playing` | Returns the current media state as JSON. |
 | `GET` | `/sessions` | Returns a list of all active media sessions. |
+| `GET` | `/widget/` | Local Now Playing overlay (OBS-friendly). |
 
 ### Schema
-The `/now-playing` endpoint provides a real-time snapshot of your active media sessions. Developers can integrate this into their own web widgets using the following JSON structure:
+The `/now-playing` endpoint provides a real-time snapshot of your active media sessions:
 
 ```json
 {
@@ -90,6 +109,16 @@ The `/now-playing` endpoint provides a real-time snapshot of your active media s
 | `1` | `TRACK` | Single active song looping |
 | `2` | `LIST` | Parent playlist/album looping |
 
+## Build
+Requires Python 3.12+ (with Visual C++ build tools if installing `winsdk` from source).
+
+```bat
+build.bat
+```
+
+Output: `dist\SMTC-Bridge.exe`
+
 ## Credits
-Built and maintained by **nutty**. 
-[Check out my other stream widgets here!](https://nutty.gg/)
+Original project by **nutty**: [nutty.gg](https://nutty.gg/) / [nuttylmao/smtc-bridge](https://github.com/nuttylmao/smtc-bridge)
+
+Local widget overlay assets are adapted from the public [nutty now-playing widget](https://widgets.nutty.gg/now-playing/settings/).

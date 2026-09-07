@@ -2,7 +2,7 @@
 from PyInstaller.utils.hooks import collect_all
 
 # Initialize lists
-datas = [('smtc-bridge.ico', '.')]
+datas = [('smtc-bridge.ico', '.'), ('nutty-widget', 'nutty-widget')]
 binaries = []
 hiddenimports = ['winsdk', 'winsdk._winrt']
 

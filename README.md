@@ -40,6 +40,7 @@ Use **Copy OBS Widget URL** from the tray so the full query string is filled wit
 | `GET` | `/now-playing` | Returns the current media state as JSON. |
 | `GET` | `/sessions` | Returns a list of all active media sessions. |
 | `GET` | `/widget/` | Local Now Playing overlay (OBS-friendly). |
+| `GET` | `/widget/settings/` | Local design editor (themes, auto-hide, colors, etc.). |
 
 ### Schema
 The `/now-playing` endpoint provides a real-time snapshot of your active media sessions:

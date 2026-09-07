@@ -427,6 +427,8 @@ async function UpdatePlayerState(data) {
             if (newTrackKey !== CurrentSongKey) {
                 ChangeTrack(mediaProps, accentColorPalette);        // Now trigger your cross-fade logic here!
                 CurrentSongKey = newTrackKey;                       // Update the tracker with the string key
+                // Auto-hide is "on track change": show again and restart the hide timer
+                SetVisibility(true);
             }
         }
 

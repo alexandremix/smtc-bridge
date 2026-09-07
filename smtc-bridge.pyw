@@ -1,5 +1,5 @@
 # Versioning
-APP_VERSION = "1.0.1"
+APP_VERSION = "1.0.2"
 DEVELOPER = "nutty"
 
 
@@ -176,6 +176,9 @@ try:
             f"&showAnimation=slide-in-from-bottom&hideAnimation=slide-out-bottom"
             f"&smtcBridgeAddress={DISPLAY_HOST}&smtcBridgePort={PORT}"
         )
+
+    def get_settings_editor_url():
+        return f"http://{DISPLAY_HOST}:{PORT}/widget/settings/"
 
     app = Flask(__name__)
     CORS(app)
@@ -467,7 +470,19 @@ try:
     @app.route('/widget/')
     @app.route('/widget/<path:filename>')
     def serve_widget(filename='index.html'):
+        target = os.path.join(WIDGET_DIR, filename)
+        if os.path.isdir(target):
+            return send_from_directory(target, 'index.html')
         return send_from_directory(WIDGET_DIR, filename)
+
+    @app.route('/.common/')
+    @app.route('/.common/<path:filename>')
+    def serve_common_assets(filename='index.html'):
+        common_dir = os.path.join(WIDGET_DIR, '.common')
+        target = os.path.join(common_dir, filename)
+        if os.path.isdir(target):
+            return send_from_directory(target, 'index.html')
+        return send_from_directory(common_dir, filename)
 
     @app.route('/now-playing')
     def now_playing():
@@ -526,6 +541,9 @@ try:
     def open_local_widget(icon=None, item=None):
         webbrowser.open(get_local_widget_url())
 
+    def open_design_editor(icon=None, item=None):
+        webbrowser.open(get_settings_editor_url())
+
     def copy_obs_widget_url(icon=None, item=None):
         url = get_local_widget_url()
         try:
@@ -553,13 +571,13 @@ try:
         menu = pystray.Menu(
             pystray.MenuItem(f"SMTC Bridge v{APP_VERSION} by {DEVELOPER}", None, enabled=False),
             pystray.Menu.SEPARATOR,            
+            pystray.MenuItem("Open Design Editor", open_design_editor),
             pystray.MenuItem("Open Local Widget", open_local_widget),
             pystray.MenuItem("Copy OBS Widget URL", copy_obs_widget_url),
             pystray.MenuItem("View Data (JSON)", lambda: webbrowser.open(f"http://{DISPLAY_HOST}:{PORT}/now-playing")),
             pystray.MenuItem("View Active Sessions", lambda: webbrowser.open(f"http://{DISPLAY_HOST}:{PORT}/sessions")),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem("★ Customize Overlay", lambda: webbrowser.open(f"https://widgets.nutty.gg/now-playing/settings/")),
-            pystray.MenuItem("★ Try my stream widgets!", lambda: webbrowser.open(f"https://nutty.gg/collections/member-exclusive-widgets")),
+            pystray.MenuItem("★ Online Customize (nutty.gg)", lambda: webbrowser.open(f"https://widgets.nutty.gg/now-playing/settings/")),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(
                 "Start with Windows", 
